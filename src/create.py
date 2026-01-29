@@ -53,10 +53,13 @@ def create_loan(friend, book, loan_date=pd.Timestamp.today().date(), next_contac
 
 if __name__ == "__main__":
     def final_scorer(score, pass_score):
+        print("\n==========")
         if score == pass_score:
             print("Final score: Pass")
         else:
             print(f"Final score: Fail. {score} of {pass_score}.")
+        print("==========\n")
+            
     engine = create_engine(connection_string)
 
     friends = ("Edd", "")
@@ -79,9 +82,7 @@ if __name__ == "__main__":
         else:
             print(f"Validate friend: Fail. Friend: '{friend}'")
     
-    print("==========")
     final_scorer(val_count, len(friends))
-    print("==========\n")
 
     books = (
         ("Words on a Page", "A. Snooze", "0000000000000", "boring"),
@@ -121,9 +122,7 @@ if __name__ == "__main__":
         else:
             print(f"Validate book: Failed. Title: '{book[0]}', ISBN: '{book[2]}'")
     
-    print("==========")
     final_scorer(val_count, len(books))
-    print("==========\n")
     
     loans = (
         (pd.read_sql("SELECT * FROM friends WHERE friend_id = 6", con=connection_string).iloc[0], # Soso Klein
@@ -155,6 +154,4 @@ if __name__ == "__main__":
         else:
             print(f"Validate loan: Failed. Friend: '{loan[0]["name"]}', Title: '{loan[1]["title"]}'")
     
-    print("==========")
     final_scorer(val_count, len(loans))
-    print("==========\n")
