@@ -62,13 +62,13 @@ if __name__ == "__main__":
             
     engine = create_engine(connection_string)
 
-    friends = ("Edd", "")
+    friends = (("Ed",), ("",), ("Eddy", 1), ("Edd", 1, "Not sure he can read"))
     val_count = 0
 
     for friend in friends:
-        val = validate_name(friend)
+        val = validate_name(friend[0])
         if not val:
-            if create_friend(friend) == f"Added '{friend}' to 'friends'.":
+            if create_friend(*friend) == f"Added '{friend[0]}' to 'friends'.":
                 print("Create friend: Pass")
                 val_count += 1
                 id = pd.read_sql("SELECT MAX(friend_id) FROM friends", con=connection_string).iloc[0,0]
