@@ -8,8 +8,8 @@ from validate import *
 
 def create_friend(name, max_loans=2, notes=None):
     df = pd.DataFrame(
-        [[name, max_loans]],
-        columns=["name", "max_loans"]
+        [[name, max_loans, notes]],
+        columns=["name", "max_loans", "notes"]
     )
     df.to_sql(
         "friends", 
