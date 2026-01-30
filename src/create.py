@@ -1,10 +1,8 @@
 import pandas as pd
-from sqlalchemy import create_engine, text
 
 import sys
 sys.path.append("..")
 from con_lib import connection_string
-from validate import *
 
 def create_friend(name, max_loans=2, notes=None):
     df = pd.DataFrame(
@@ -52,6 +50,9 @@ def create_loan(friend, book, loan_date=pd.Timestamp.today().date(), next_contac
     return message
 
 if __name__ == "__main__":
+    from sqlalchemy import create_engine, text
+    from validate import *
+    
     def final_scorer(score, pass_score):
         print("\n==========")
         if score == pass_score:
