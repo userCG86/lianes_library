@@ -19,7 +19,7 @@ def create_friend(name, max_loans=2, notes=None):
     
     return message
 
-def create_book(title, author, isbn, genre=None):
+def create_book(title, isbn, author=None, genre=None):
     df = pd.DataFrame(
         [[title, author, genre, isbn]], 
         columns=["title", "author", "genre", "isbn"]
@@ -50,109 +50,75 @@ def create_loan(friend, book, loan_date=pd.Timestamp.today().date(), next_contac
     return message
 
 if __name__ == "__main__":
+    from functools import partial
     from sqlalchemy import create_engine, text
-    from validate import *
     
     def final_scorer(score, pass_score):
-        print("\n==========")
+        print()
         if score == pass_score:
             print("Final score: Pass")
         else:
             print(f"Final score: Fail. {score} of {pass_score}.")
         print("==========\n")
+    def validation_loop(input_, expected_, type_, table):
+        primaries = {"friends": ["friend_id"], "books": ["isbn"], "loans": ["friend_id", "isbn"]}
+        outputs = []
+        for in_ in input_:
+            table_pre = pd.read_sql(table, con=connection_string)
+            in_()
+            table_post = pd.read_sql(table, con=connection_string)
+
+            new_line = pd.concat([table_pre, table_post]).drop_duplicates(keep=False).iloc[0].fillna("N/A")
+            outputs.append(new_line)
+        val_score = 0
+        for i, o in zip(expected_, outputs):
+            for j in i:
+                if j in o.values:
+                    continue
+                else:
+                    print(f"Failed. {type_}: {i} not sent to table.")
+                    break
+            else:
+                print("Pass.")
+                val_score += 1
+                with engine.begin() as connection:
+                    connection.execute(text(f"DELETE FROM {table} WHERE {" AND ".join([f"{id} = {o[id]}" for id in primaries[table]])};"))
+                    
+        final_scorer(val_score, len(input_))
             
     engine = create_engine(connection_string)
 
-    friends = (("Ed",), ("",), ("Eddy", 1), ("Edd", 1, "Not sure he can read"))
-    val_count = 0
+    print("\nCreate friend\n==========")
+    friends = (partial(create_friend, "Edd"),
+               partial(create_friend, "Eddy", 1),
+               partial(create_friend, "Ed", notes="Not sure he can read"))
+    expected = (("Edd", 2, "N/A"), 
+                ("Eddy", 1, "N/A"), 
+                ("Ed", 2, "Not sure he can read")
+               )
+    validation_loop(friends, expected, "Name", "friends")
 
-    for friend in friends:
-        val = validate_name(friend[0])
-        if not val:
-            if create_friend(*friend) == f"Added '{friend[0]}' to 'friends'.":
-                print("Create friend: Pass")
-                val_count += 1
-                id = pd.read_sql("SELECT MAX(friend_id) FROM friends", con=connection_string).iloc[0,0]
-                with engine.begin() as connection:
-                    connection.execute(text(f"DELETE FROM friends WHERE friend_id = {id}"))
-            else: 
-                print(f"Create friend: Fail. Friend: '{friend}'")
-        elif val == "Warning. Empty name not accepted.":
-            print("Validate empty name: Pass")
-            val_count += 1
-        else:
-            print(f"Validate friend: Fail. Friend: '{friend}'")
-    
-    final_scorer(val_count, len(friends))
+    print("\nCreate book\n==========")
+    books = (partial(create_book, "Words on a Page", "0000000000000"),
+             partial(create_book, "Alice's Big Nap".replace("'", "\'"), "0000000000001", author="A. Snooze"),
+             partial(create_book, "Holy Words on a Page", "0000000000002", genre="Religion")
+            )
+    expected = (("Words on a Page", "0000000000000", "N/A", "N/A"), 
+                ("Alice's Big Nap", "0000000000001", "A. Snooze", "N/A"), 
+                ("Holy Words on a Page", "0000000000002", "N/A", "Religion")
+               )
+    validation_loop(books, expected, "Title", "books")
 
-    books = (
-        ("Words on a Page", "A. Snooze", "0000000000000", "boring"),
-        ("Alice's Big Nap", "A. Snooze", "00001", "boring"),
-        ("Alice's Big Nap", "A. Snooze", "000000000a", "boring"),
-        ("Alice's Big Nap", "A. Snooze", "9780987654321", "boring"),
-        ("", "A. Snooze", "0000000000", "boring")
-    )
-    val_count = 0
-    
-    for book in books:
-        val1 = validate_isbn(book[2])
-        val2 = validate_title(book[0])
-        if (not val1) & (not val2):
-            if create_book(*book) == f"Added '{book[0]}' to 'books'.":
-                print("Create book: Pass")
-                val_count += 1
-                with engine.begin() as connection:
-                    connection.execute(text(f"DELETE FROM books WHERE isbn = {book[2]}"))
-            else:
-                print(f"Create book: Fail. Title: '{book[0]}'")
-        elif val1:
-            if val1 == "Warning. ISBN must be 10 or 13 digits long.":
-                print("Validate ISBN wrong length: Pass")
-                val_count += 1
-            elif val1 == "Warning. ISBN must be numeric.":
-                print("Validate ISBN numeric: Pass")
-                val_count += 1
-            elif val1 == "Warning. This ISBN is already in use.":
-                print("Validate ISBN unique: Pass")
-                val_count += 1
-            else:
-                print(f"Validate ISBN: Failed. ISBN: '{book[2]}'")
-        elif val2 == "Warning. Empty title not accepted.":
-            print("Validate empty title: Pass")
-            val_count += 1
-        else:
-            print(f"Validate book: Failed. Title: '{book[0]}', ISBN: '{book[2]}'")
-    
-    final_scorer(val_count, len(books))
-    
-    loans = (
-        (pd.read_sql("SELECT * FROM friends WHERE friend_id = 6", con=connection_string).iloc[0], # Soso Klein
-         pd.read_sql("SELECT * FROM books WHERE ISBN = '9785566778899'", con=connection_string).iloc[0]), # Gardens of Glass
-        (pd.read_sql("SELECT * FROM friends WHERE friend_id = 3", con=connection_string).iloc[0], # Luca Schmidt
-         pd.read_sql("SELECT * FROM books WHERE ISBN = '9785566778899'", con=connection_string).iloc[0]), # Gardens of Glass
-        (pd.read_sql("SELECT * FROM friends WHERE friend_id = 6", con=connection_string).iloc[0], # Soso Klein
-         pd.read_sql("SELECT * FROM books WHERE ISBN = '9781122334455'", con=connection_string).iloc[0]) # The Secret Ingredient
-    )
-    val_count = 0
-    
-    for loan in loans:
-        val1 = validate_loan_taker(loan[0])
-        val2 = validate_loan_item(loan[1])
-        if (not val1) & (not val2):
-            if create_loan(*loan) == f"Added '{loan[0]["name"]}' borrowed '{loan[1]["title"]}' to 'loans'.":
-                print("Create loan: Pass")
-                val_count += 1
-                with engine.begin() as connection:
-                    connection.execute(text(f"DELETE FROM loans WHERE isbn = {loan[1]["isbn"]} AND friend_id = {loan[0]["friend_id"]}"))
-            else:
-                print(f"Create loan: Failed. Friend: '{loan[0]["name"]}', Title: '{loan[1]["title"]}'")
-        elif val1 == f"Warning. {loan[0]["name"]} has already reached their maximum loan allowance.":
-            print("Validate friend max loans: Pass")
-            val_count += 1
-        elif val2 == f"Warning. {loan[1]["title"]} is already on loan.":
-            print("Validate already on loan: Pass")
-            val_count += 1
-        else:
-            print(f"Validate loan: Failed. Friend: '{loan[0]["name"]}', Title: '{loan[1]["title"]}'")
-    
-    final_scorer(val_count, len(loans))
+    print("\nCreate loan\n==========")
+    loans = (partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 6", con=connection_string).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9785566778899'", con=connection_string).iloc[0]),
+             partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 1", con=connection_string).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9780062316110'", con=connection_string).iloc[0], '2026-01-01'),
+             partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 2", con=connection_string).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9780385490818'", con=connection_string).iloc[0], next_contact='2026-02-15'),
+             partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 5", con=connection_string).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9780143127741'", con=connection_string).iloc[0], notes="Test note."),
+            )
+    today = pd.Timestamp.today().date()
+    expected = (("9785566778899", 6,  pd.Timestamp(today), "N/A", pd.Timestamp(today+pd.Timedelta(30, "d")), "N/A"),
+                ("9780062316110", 1, pd.Timestamp('2026-01-01'), "N/A", pd.Timestamp(today+pd.Timedelta(30, "d")), "N/A"),
+                ("9780385490818", 2, pd.Timestamp(today), "N/A", pd.Timestamp('2026-02-15'), "N/A"),
+                ("9780143127741", 5,  pd.Timestamp(today), "N/A", pd.Timestamp(today+pd.Timedelta(30, "d")), "Test note.")
+               )
+    validation_loop(loans, expected, "Title", "loans")
