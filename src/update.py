@@ -4,6 +4,8 @@ import sys
 sys.path.append("..")
 from con_lib import connection_string
 
+engine = create_engine(connection_string)
+
 def update_friend(friend, field, new_data):
     update_query = f"""UPDATE friends 
     SET {field} = '{new_data}' 
@@ -63,7 +65,7 @@ if __name__ == "__main__":
                     
         final_scorer(val_score, len(input_))
     
-    engine = create_engine(connection_string)
+    # engine = create_engine(connection_string)
 
     print("\nUpdate friend\n==========")
     friend = pd.read_sql("SELECT * FROM friends WHERE friend_id = 6", con=connection_string).iloc[0]
