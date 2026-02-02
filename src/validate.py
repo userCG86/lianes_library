@@ -5,7 +5,7 @@ sys.path.append("..")
 from con_lib import connection_string
 
 def validate_name(name):
-    if not name:
+    if not name.strip():
         return "Warning. Empty name not accepted."
     else:
         return ""
@@ -21,7 +21,7 @@ def validate_isbn(isbn):
         return ""
 
 def validate_title(title):
-    if not title:
+    if not title.strip():
         return "Warning. Empty title not accepted."
     else:
         return ""
