@@ -73,7 +73,12 @@ INSERT INTO books (title, author, genre, ISBN) VALUES
 ('Echoes of the Past', 'Julian Marsh', 'Thriller', '9780987654321'),
 ('The Secret Ingredient', 'Samira Nouri', 'Romance', '9781122334455'),
 ('The Clockmaker\'s Son', 'Hugo Vernier', 'Steampunk', '9784455667788'),
-('Gardens of Glass', 'Ivy Thornton', 'Fantasy', '9785566778899');
+('Gardens of Glass', 'Ivy Thornton', 'Fantasy', '9785566778899'),
+('The Wind-Up Bird Chronicle', 'Haruki Murakami', 'Fiction', '9780307949486'),
+('The Alchemist', 'Paulo Coelho', 'Fiction', '9780062316110'),
+('Sapiens: A Brief History of Humankind', 'Yuval Noah Harari', 'Nonfiction', '9780143127741'),
+('Thinking, Fast and Slow', 'Daniel Kahneman', 'Psychology', '9780553386790'),
+('The Poisonwood Bible', 'Barbara Kingsolver', 'Fiction', '9780385490818');
 
 
 -- Insert loans
