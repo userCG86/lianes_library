@@ -68,7 +68,11 @@ if __name__ == "__main__":
             in_()
             table_post = pd.read_sql(table, con=connection_string)
 
-            new_line = pd.concat([table_pre, table_post]).drop_duplicates(keep=False).iloc[0].fillna("N/A")
+            new_line = (pd.concat([table_pre, table_post])
+                        .drop_duplicates(keep=False)
+                        .iloc[0]
+                        .fillna("N/A")
+                       )
             outputs.append(new_line)
         val_score = 0
         for i, o in zip(expected_, outputs):
