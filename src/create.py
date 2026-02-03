@@ -51,7 +51,6 @@ def create_loan(friend, book, loan_date=pd.Timestamp.today().date(), next_contac
 
 if __name__ == "__main__":
     from functools import partial
-    # from sqlalchemy import create_engine, text
     
     def final_scorer(score, pass_score):
         print()
@@ -61,7 +60,6 @@ if __name__ == "__main__":
             print(f"Final score: Fail. {score} of {pass_score}.")
         print("==========\n")
     def validation_loop(input_, expected_, type_, table):
-        # primaries = {"friends": ["friend_id"], "books": ["isbn"], "loans": ["friend_id", "isbn"]}
         outputs = []
         for in_ in input_:
             table_pre = pd.read_sql(table, con=connection_string)
@@ -85,8 +83,6 @@ if __name__ == "__main__":
             else:
                 print("Pass.")
                 val_score += 1
-                # with engine.begin() as connection:
-                #     connection.execute(text(f"DELETE FROM {table} WHERE {" AND ".join([f"{id} = {o[id]}" for id in primaries[table]])};"))
                     
         final_scorer(val_score, len(input_))
             
