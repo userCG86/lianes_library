@@ -77,12 +77,6 @@ if book_selection == "Add a book":
         if val2:
             st.warning(val2)
     try:
-        # val1 = validate_title(title)
-        # val2 = validate_isbn(isbn)
-        # if val1 and title:
-        #     st.warning(val1)
-        # if val2 and isbn:
-        #     st.warning(val2)
         if (not val1) & (not val2):
             if st.button("Submit", key="create_book"):
                 st.success(create_book(title, isbn, author, genre))
