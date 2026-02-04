@@ -1,13 +1,9 @@
 import pandas as pd
-from sqlalchemy import create_engine, text
-
-import sys
-sys.path.append("..")
-from con_lib import connection_string
-
-engine = create_engine(connection_string)
+from sqlalchemy import text
+import db
 
 def delete_friend(friend):
+    engine = db.get_engine()
     delete_query = f"""DELETE FROM friends
     WHERE friend_id = '{friend["friend_id"]}';"""
     with engine.begin() as connection:
@@ -15,6 +11,7 @@ def delete_friend(friend):
         return f"Removed '{friend['name']}' from 'friends'."
 
 def delete_book(book):
+    engine = db.get_engine()
     delete_query = f"""DELETE FROM books
     WHERE isbn = '{book["isbn"]}';"""
     with engine.begin() as connection:
@@ -22,9 +19,10 @@ def delete_book(book):
         return f"Removed '{book['title']}' from 'books'."
 
 def delete_loan(loan):
-    lookup_table = (pd.read_sql("loans", con=connection_string).loc[[loan.name]]
-                    .merge(pd.read_sql("friends", con=connection_string), on="friend_id")
-                    .merge(pd.read_sql("books", con=connection_string), on="isbn")
+    engine = db.get_engine()
+    lookup_table = (pd.read_sql("loans", con=engine).loc[[loan.name]]
+                    .merge(pd.read_sql("friends", con=engine), on="friend_id")
+                    .merge(pd.read_sql("books", con=engine), on="isbn")
                     .iloc[0]
                    )
     delete_query = f"""DELETE FROM loans
@@ -34,6 +32,13 @@ def delete_loan(loan):
         return f"Removed '{lookup_table["name"]}' borrowed '{lookup_table["title"]}' from 'loans'."
 
 if __name__ == "__main__":
+    import sys
+    from sqlalchemy import create_engine
+    sys.path.append("..")
+    from con_lib import connection_string
+    engine = create_engine(connection_string)
+    db.set_engine(engine)
+    
     def final_scorer(score, pass_score):
         print()
         if score == pass_score:
@@ -45,9 +50,9 @@ if __name__ == "__main__":
         indentifiers = {"friends": "name", "books": "title", "loans": ["friend_id", "isbn"]}
         outputs = []
         for in_ in input_:
-            table_pre = pd.read_sql(table, con=connection_string)
+            table_pre = pd.read_sql(table, con=engine)
             f(in_)
-            table_post = pd.read_sql(table, con=connection_string)
+            table_post = pd.read_sql(table, con=engine)
 
             dropped_line = pd.concat([table_pre, table_post]).drop_duplicates(keep=False).iloc[0]
             outputs.append(dropped_line)
@@ -63,13 +68,13 @@ if __name__ == "__main__":
 
 
     print("\nDelete friend\n==========")
-    friend = pd.read_sql("friends", con=connection_string).sample().iloc[0]
+    friend = pd.read_sql("friends", con=engine).sample().iloc[0]
     validation_loop((friend,), "friends", delete_friend)
 
     print("\nDelete book\n==========")
-    book = pd.read_sql("books", con=connection_string).sample().iloc[0]
+    book = pd.read_sql("books", con=engine).sample().iloc[0]
     validation_loop((book,), "books", delete_book)
     
     print("\nDelete loan\n==========")
-    loan = pd.read_sql("loans", con=connection_string).sample().iloc[0]
+    loan = pd.read_sql("loans", con=engine).sample().iloc[0]
     validation_loop((loan,), "loans", delete_loan)

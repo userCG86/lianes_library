@@ -1,22 +1,20 @@
 import pandas as pd
-# from sqlalchemy import create_engine, text
-
-import sys
-sys.path.append("..")
-from con_lib import connection_string
+import db
 
 
 def read_friends():
-    return pd.read_sql("friends", con=connection_string)
+    engine = db.get_engine()
+    return pd.read_sql("friends", con=engine)
 
 def display_friends():
     friends = read_friends()
     return friends.drop("friend_id", axis=1).rename({"name": "Name", "max_loans": "Max loans", "notes": "Notes"}, axis=1)
 
 def read_books(available_only=False):
-    books = pd.read_sql("books", con=connection_string)
+    engine = db.get_engine()
+    books = pd.read_sql("books", con=engine)
     if available_only:
-        loans = pd.read_sql("loans", con=connection_string)
+        loans = pd.read_sql("loans", con=engine)
         books = pd.merge(books, loans, on="isbn", how="left").query("friend_id.isna()")[books.columns]
     return books
 
@@ -25,7 +23,8 @@ def display_books(available_only=False):
     return books.rename({"title": "Title", "author": "Author", "genre": "Genre", "isbn": "ISBN"}, axis=1)
 
 def read_loans():
-    return pd.read_sql("loans", con=connection_string)
+    engine = db.get_engine()
+    return pd.read_sql("loans", con=engine)
 
 def display_loans():
     friends = read_friends()
@@ -37,6 +36,13 @@ def display_loans():
     return pd.merge(loans, friends, on="friend_id", suffixes=["", "_no"]).merge(books, on="isbn")[["title", "name", "loan_date", "last_contact", "next_contact", "notes"]].rename({"title": "Title", "name": "Name", "loan_date": "Loan date", "last_contact": "Last contact", "next_contact": "Next contact", "notes": "Notes"}, axis=1)
 
 if __name__ == "__main__":
+    import sys
+    from sqlalchemy import create_engine
+    sys.path.append("..")
+    from con_lib import connection_string
+    engine = create_engine(connection_string)
+    db.set_engine(engine)
+
     def final_scorer(score, pass_score):
         print("\n==========")
         if score == pass_score:

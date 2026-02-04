@@ -1,10 +1,9 @@
 import pandas as pd
+import db
 
-import sys
-sys.path.append("..")
-from con_lib import connection_string
 
 def create_friend(name, max_loans=2, notes=None):
+    engine = db.get_engine()
     df = pd.DataFrame(
         [[name, max_loans, notes]],
         columns=["name", "max_loans", "notes"]
@@ -12,7 +11,7 @@ def create_friend(name, max_loans=2, notes=None):
     df.to_sql(
         "friends", 
         if_exists="append", 
-        con=connection_string, 
+        con=engine, 
         index=False
     )
     message = f"Added '{name}' to 'friends'."
@@ -20,6 +19,7 @@ def create_friend(name, max_loans=2, notes=None):
     return message
 
 def create_book(title, isbn, author=None, genre=None):
+    engine = db.get_engine()
     df = pd.DataFrame(
         [[title, author, genre, isbn]], 
         columns=["title", "author", "genre", "isbn"]
@@ -27,7 +27,7 @@ def create_book(title, isbn, author=None, genre=None):
     df.to_sql(
         "books",
         if_exists="append", 
-        con=connection_string, 
+        con=engine, 
         index=False
     )
     message = f"Added '{title}' to 'books'."
@@ -35,6 +35,7 @@ def create_book(title, isbn, author=None, genre=None):
     return message
 
 def create_loan(friend, book, loan_date=pd.Timestamp.today().date(), next_contact=pd.Timestamp.today().date() + pd.Timedelta(30, "d"), notes=None):
+    engine = db.get_engine()
     df = pd.DataFrame(
         [[book["isbn"], friend["friend_id"], loan_date, next_contact, notes]],
         columns = ["isbn", "friend_id", "loan_date", "next_contact", "notes"]
@@ -42,7 +43,7 @@ def create_loan(friend, book, loan_date=pd.Timestamp.today().date(), next_contac
     df.to_sql(
         "loans",
         if_exists="append",
-        con=connection_string,
+        con=engine,
         index=False
     )
     message = f"Added '{friend["name"]}' borrowed '{book["title"]}' to 'loans'."
@@ -51,6 +52,13 @@ def create_loan(friend, book, loan_date=pd.Timestamp.today().date(), next_contac
 
 if __name__ == "__main__":
     from functools import partial
+
+    import sys
+    from sqlalchemy import create_engine
+    sys.path.append("..")
+    from con_lib import connection_string
+    engine = create_engine(connection_string)
+    db.set_engine(engine)
     
     def final_scorer(score, pass_score):
         print()
@@ -62,9 +70,9 @@ if __name__ == "__main__":
     def validation_loop(input_, expected_, type_, table):
         outputs = []
         for in_ in input_:
-            table_pre = pd.read_sql(table, con=connection_string)
+            table_pre = pd.read_sql(table, con=engine)
             in_()
-            table_post = pd.read_sql(table, con=connection_string)
+            table_post = pd.read_sql(table, con=engine)
 
             new_line = (pd.concat([table_pre, table_post])
                         .drop_duplicates(keep=False)
@@ -108,10 +116,10 @@ if __name__ == "__main__":
     validation_loop(books, expected, "Title", "books")
 
     print("\nCreate loan\n==========")
-    loans = (partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 6", con=connection_string).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9785566778899'", con=connection_string).iloc[0]),
-             partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 1", con=connection_string).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9780062316110'", con=connection_string).iloc[0], '2026-01-01'),
-             partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 2", con=connection_string).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9780385490818'", con=connection_string).iloc[0], next_contact='2026-02-15'),
-             partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 5", con=connection_string).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9780143127741'", con=connection_string).iloc[0], notes="Test note."),
+    loans = (partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 6", con=engine).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9785566778899'", con=engine).iloc[0]),
+             partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 1", con=engine).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9780062316110'", con=engine).iloc[0], '2026-01-01'),
+             partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 2", con=engine).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9780385490818'", con=engine).iloc[0], next_contact='2026-02-15'),
+             partial(create_loan, pd.read_sql("SELECT * FROM friends WHERE friend_id = 5", con=engine).iloc[0], pd.read_sql("SELECT * FROM books WHERE ISBN = '9780143127741'", con=engine).iloc[0], notes="Test note."),
             )
     today = pd.Timestamp.today().date()
     expected = (("9785566778899", 6,  pd.Timestamp(today), "N/A", pd.Timestamp(today+pd.Timedelta(30, "d")), "N/A"),
