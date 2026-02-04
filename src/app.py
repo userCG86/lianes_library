@@ -56,7 +56,7 @@ elif st.session_state["login"] == "loggedin":
             loan_part = st.selectbox("What would you like to update?", ["Contact dates", "Notes"], key="loan_part", index=None)
             if loan_part == "Contact dates":
                 last_contact = st.date_input("Last contact date", key="last_date")
-                next_contact = st.date_input("Last contact date", key="next_date", value=pd.Timestamp.today().date() + pd.Timedelta(14, "d"))
+                next_contact = st.date_input("Next contact date", key="next_date", value=pd.Timestamp.today().date() + pd.Timedelta(14, "d"))
                 if st.button("Submit", key="submit_loan_dates"):
                     st.success(update_loan(loan, "dates", [last_contact, next_contact]))
             elif loan_part == "Notes":
