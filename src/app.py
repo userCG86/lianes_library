@@ -4,11 +4,12 @@ from create import *
 from read import *
 from validate import *
 from update import *
+from delete import *
 
 st.title("Welcome to your Library!")
 
 st.header("Loans")
-loan_selection = st.radio("What would you like to do?", options=["Review loans", "Loan a book", "Update a loan"], key="loan_selection")
+loan_selection = st.radio("What would you like to do?", options=["Review loans", "Loan a book", "Update a loan", "Return a book"], key="loan_selection")
 if loan_selection == "Loan a book":       
     book_df = st.dataframe(display_books(), selection_mode="single-row", on_select="rerun")
     if len(book_df.selection["rows"]) > 0:
@@ -23,12 +24,6 @@ if loan_selection == "Loan a book":
         if val2:
             st.warning(val2)
     try:
-        # val1 = validate_loan_taker(friend)
-        # val2 = validate_loan_item(book)
-        # if val1:
-        #     st.warning(val1)
-        # if val2:
-        #     st.warning(val2)
         if (not val1) & (not val2):
             loan_date = st.date_input("Loan date", key="loan_date")
             next_contact = st.date_input("Next check date", value=pd.Timestamp.today().date() + pd.Timedelta(30, "d"), key="loan_next_contact")
@@ -57,11 +52,17 @@ elif loan_selection == "Update a loan":
             notes = st.text_area("", key="update_loan_notes", value=loan["notes"])
             if st.button("Submit", key="submit_loan_notes"):
                 st.success(update_loan(loan, "notes", notes))
-        
+
+elif loan_selection == "Return a book":
+    loan_df = st.dataframe(display_loans(), selection_mode="single-row", on_select="rerun")
+    if len(loan_df.selection["rows"]) > 0:
+        loan = read_loans().loc[loan_df.selection["rows"][0]]
+        if st.button("Confirm", key="delete_loan"):
+            st.success(delete_loan(loan))
         
         
 st.header("Books")
-book_selection = st.radio("What would you like to do?", options=["Review books", "Add a book", "Update a book"], index=None)
+book_selection = st.radio("What would you like to do?", options=["Review books", "Add a book", "Update a book", "Remove a book"], index=None)
 if book_selection == "Add a book":
     title = st.text_input("Title:", key="create_title")
     if title:
@@ -119,9 +120,16 @@ elif book_selection == "Update a book":
         except:
             raise
 
+elif book_selection == "Remove a book":
+    book_df = st.dataframe(display_books(), selection_mode="single-row", on_select="rerun")
+    if len(book_df.selection["rows"]) > 0:
+        book = read_books().loc[book_df.selection["rows"][0]]
+        if st.button("Confirm", key="delete_book"):
+            st.success(delete_book(book))
+
 
 st.header("Friends")
-friend_selection = st.radio("What would you like to do?", options=["Review friends", "Add a friend", "Update a friend"], index=None)
+friend_selection = st.radio("What would you like to do?", options=["Review friends", "Add a friend", "Update a friend", "Remove a friend"], index=None)
 if friend_selection == "Review friends":
     st.dataframe(display_friends())
 
@@ -161,3 +169,10 @@ elif friend_selection == "Update a friend":
             pass
         except:
             raise
+
+elif friend_selection == "Remove a friend":
+    friend_df = st.dataframe(display_friends(), selection_mode="single-row", on_select="rerun")
+    if len(friend_df.selection["rows"]) > 0:
+        friend = read_friends().loc[friend_df.selection["rows"][0]]
+        if st.button("Confirm", key="delete_friend"):
+            st.success(delete_friend(friend))
