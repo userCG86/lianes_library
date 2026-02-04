@@ -36,12 +36,15 @@ def display_loans():
     return pd.merge(loans, friends, on="friend_id", suffixes=["", "_no"]).merge(books, on="isbn")[["title", "name", "loan_date", "last_contact", "next_contact", "notes"]].rename({"title": "Title", "name": "Name", "loan_date": "Loan date", "last_contact": "Last contact", "next_contact": "Next contact", "notes": "Notes"}, axis=1)
 
 if __name__ == "__main__":
+    from functools import partial
+    
     import sys
     from sqlalchemy import create_engine
     sys.path.append("..")
     from con_lib import connection_string
     engine = create_engine(connection_string)
     db.set_engine(engine)
+
 
     def final_scorer(score, pass_score):
         print("\n==========")
@@ -50,20 +53,60 @@ if __name__ == "__main__":
         else:
             print(f"Final score: Fail. {score} of {pass_score}.")
         print("==========\n")
-    
-    val_count = 0
-    functions = (
-        read_friends(), display_friends(),
-        read_books(), display_books(),
-        read_loans(), display_loans()
-                )
-    names = (
-        "read_friends", "display_friends",
-        "read_books", "display_books",
-        "read_loans", "display_loans"
-    )
-    for f, n in zip(functions, names):
-        print(f"{n}: Pass")
-        val_count += 1
+    def validation_loop(input_, expected_):
+        outputs = []
+        for in_ in input_:
+            out = in_()
+            outputs.append((in_.func.__name__, out))
+        val_score = 0
+        for i, o in zip(expected_, outputs):
+            if i[0] == list(o[1].columns):
+                if i[1] == o[1].shape[0]:
+                    print(f"{o[0]}: Pass")
+                    val_score += 1
+                elif o[1].empty:
+                    print(f"Failed. {o[0]}: No data")
+                else:
+                    print(f"Failed. {o[0]}: Expected {i[1]} lines, read {o[1].shape[0]}")
+            else:
+                print(f"Failed. {o[0]}: columns {list(o[1].columns)}")
 
-    final_scorer(val_count, len(functions))
+        final_scorer(val_score, len(input_))
+        
+    
+    print("\nRead friends\n==========")
+    reads = (
+        partial(read_friends), 
+        partial(display_friends)
+    )
+    expected = (
+        (['friend_id', 'name', 'max_loans', 'notes'], 6), 
+        (['Name', 'Max loans', 'Notes'], 6)
+    )
+    validation_loop(reads, expected)
+
+    print("\nRead books\n==========")
+    reads = (
+        partial(read_books), 
+        partial(read_books, True), 
+        partial(display_books),
+        partial(display_books, True)
+    )
+    expected = (
+        (['title', 'author', 'genre', 'isbn'], 10), 
+        (['title', 'author', 'genre', 'isbn'], 6), 
+        (['Title', 'Author', 'Genre', 'ISBN'], 10),
+        (['Title', 'Author', 'Genre', 'ISBN'], 6)
+    )
+    validation_loop(reads, expected)
+
+    print("\nRead loans\n==========")
+    reads = (
+        partial(read_loans), 
+        partial(display_loans)
+    )
+    expected = (
+        (['isbn', 'friend_id', 'loan_date', 'last_contact', 'next_contact', 'notes'], 4), 
+        (['Title', 'Name', 'Loan date', 'Last contact', 'Next contact', 'Notes'], 4)
+    )
+    validation_loop(reads, expected)
