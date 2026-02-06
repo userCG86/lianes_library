@@ -2,9 +2,14 @@
 from sqlalchemy import text
 import db
 
+def sanitize_text(new_data):
+    if isinstance(new_data, str):
+        new_data = new_data.replace("'", "\\'")
+    return new_data
 
 def update_friend(friend, field, new_data):
     engine = db.get_engine()
+    new_data = sanitize_text(new_data)
     update_query = f"""UPDATE friends 
     SET {field} = '{new_data}' 
     WHERE friend_id = {friend["friend_id"]};"""
@@ -14,6 +19,7 @@ def update_friend(friend, field, new_data):
 
 def update_book(book, field, new_data):
     engine = db.get_engine()
+    new_data = sanitize_text(new_data)
     update_query = f"""UPDATE books
     SET {field} = '{new_data}'
     WHERE isbn = {book["isbn"]};"""
@@ -23,6 +29,7 @@ def update_book(book, field, new_data):
 
 def update_loan(loan, field, new_data):
     engine = db.get_engine()
+    new_data = sanitize_text(new_data)
     update_query = f"""UPDATE loans
     SET {field} = '{new_data}'
     WHERE isbn = {loan["isbn"]} AND friend_id = {loan["friend_id"]};"""
@@ -79,7 +86,7 @@ if __name__ == "__main__":
     updates = (
         (friend, 'name', 'Soso'),
         (friend, 'max_loans', 2),
-        (friend, 'notes', "Doesn't answer phone, use socials.".replace("'", "\\'")) #replace not needed in streamlit
+        (friend, 'notes', "Doesn't answer phone, use socials.") #replace not needed in streamlit
     )
     expected = (["Soso"], [2], ["Doesn't answer phone, use socials."])
     validation_loop(updates, expected, [u[1] for u in updates], "friends", update_friend)
