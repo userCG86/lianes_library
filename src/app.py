@@ -15,7 +15,6 @@ if "login" not in st.session_state:
 if st.session_state["login"] == "notloggedin":
     login()
 elif st.session_state["login"] == "loggedin":
-# else:
     st.header("Loans")
     loan_selection = st.radio("What would you like to do?", options=["Review loans", "Loan a book", "Update a loan", "Return a book"], key="loan_selection")
     if loan_selection == "Loan a book":       
@@ -178,3 +177,8 @@ elif st.session_state["login"] == "loggedin":
             friend = read_friends().loc[friend_df.selection["rows"][0]]
             if st.button("Confirm", key="delete_friend"):
                 st.success(delete_friend(friend))
+
+    st.space(size="large")
+    if st.button("Logout", key="logout"):
+        st.session_state["login"] = "notloggedin"
+        st.rerun()
