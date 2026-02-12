@@ -8,17 +8,14 @@ from delete import *
 from login import *
 
 st.title("Welcome to your Library!")
-# st.write(st.session_state)
 if "engine" in st.session_state:
     db.set_engine(st.session_state["engine"])
 if "login" not in st.session_state:
     st.session_state["login"] = "notloggedin"
-# st.write(st.session_state["login"], "before")
 if st.session_state["login"] == "notloggedin":
     login()
 elif st.session_state["login"] == "loggedin":
 # else:
-    # engine = st.session_state["engine"]
     st.header("Loans")
     loan_selection = st.radio("What would you like to do?", options=["Review loans", "Loan a book", "Update a loan", "Return a book"], key="loan_selection")
     if loan_selection == "Loan a book":       
@@ -106,7 +103,7 @@ elif st.session_state["login"] == "loggedin":
             book = read_books().loc[book_df.selection["rows"][0]]
             book_part = st.selectbox("What would you like to update?", ["Title", "Author", "Genre", "ISBN"], key="book_part", index=None)
             if book_part:
-                to_update_book = st.text_input("", key="update_book_entry")
+                to_update_book = st.text_input("", key="update_book_entry", value=book[book_part.lower()])
             try:
                 if book_part == "ISBN" and to_update_book:
                     val = validate_isbn(to_update_book)
@@ -155,7 +152,7 @@ elif st.session_state["login"] == "loggedin":
             friend = read_friends().loc[friend_df.selection["rows"][0]]
             friend_part = st.selectbox("What would you like to update?", ["Name", "Max loans", "Notes"], key="friend_part", index=None)
             if friend_part == "Name":
-                to_update_friend = st.text_input("", key="update_name")
+                to_update_friend = st.text_input("", key="update_name", value=friend["name"])
                 val = validate_name(to_update_friend)
                 if val and to_update_friend:
                     st.warning(val)
