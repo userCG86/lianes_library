@@ -1,5 +1,3 @@
-# from sqlalchemy import create_engine
-
 engine = None
 
 def set_engine(e):

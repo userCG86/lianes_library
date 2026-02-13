@@ -2,7 +2,6 @@ import streamlit as st
 from sqlalchemy import create_engine, exc
 
 import db
-# from sqlalchemy.exc import OperationalError
 
 def login():
     schema = "sample_library"
@@ -15,11 +14,9 @@ def login():
         try:
             engine = create_engine(connection_string)
             engine.connect()
-            # st.session_state["connection_string"] = connection_string
             db.set_engine(engine)
             st.session_state["engine"] = engine
             st.session_state["login"] = "loggedin"
-            # st.write(st.session_state["login"], "after")
             st.rerun()
         except exc.OperationalError:
             st.warning("username incorrect")
