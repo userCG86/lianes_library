@@ -1,47 +1,57 @@
 import pandas as pd
+import db
 
-import sys
-sys.path.append("..")
-from con_lib import connection_string
+
 
 def validate_name(name):
-    if not name.strip():
+    if (name is None) or (not name.strip()):
         return "Warning. Empty name not accepted."
     else:
         return ""
 
 def validate_isbn(isbn):
+    engine = db.get_engine()
     if len(isbn) not in (10, 13):
         return "Warning. ISBN must be 10 or 13 digits long."
     elif not isbn.isnumeric():
         return "Warning. ISBN must be numeric."
-    elif isbn in pd.read_sql("SELECT isbn FROM books", con=connection_string)["isbn"].values:
+    elif isbn in pd.read_sql("SELECT isbn FROM books", con=engine)["isbn"].values:
         return "Warning. This ISBN is already in use."
     else:
         return ""
 
 def validate_title(title):
-    if not title.strip():
+    if (title is None) or (not title.strip()):
         return "Warning. Empty title not accepted."
     else:
         return ""
 
 def validate_loan_taker(friend):
-    current_loans = pd.read_sql("loans", con=connection_string)
+    engine = db.get_engine()
+    current_loans = pd.read_sql("loans", con=engine)
     if friend["friend_id"] in current_loans["friend_id"].unique():
-        if friend["max_loans"] == current_loans.value_counts("friend_id").loc[friend["friend_id"]]:
+        num_loans = current_loans.value_counts("friend_id").loc[friend["friend_id"]]
+        if friend["max_loans"] == num_loans:
             return f"Warning. {friend["name"]} has already reached their maximum loan allowance."
     else:
         return ""
 
 def validate_loan_item(book):
-    current_loans = pd.read_sql("loans", con=connection_string)
+    engine = db.get_engine()
+    current_loans = pd.read_sql("loans", con=engine)
     if book["isbn"] in current_loans["isbn"].values:
         return f"Warning. {book["title"]} is already on loan."
     else:
         return ""
 
 if __name__ == "__main__":
+    from sqlalchemy import create_engine
+    import sys
+    sys.path.append("..")
+    from con_lib import connection_string
+    engine = create_engine(connection_string)
+    db.set_engine(engine)
+    
     def final_scorer(score, pass_score):
         print()
         if score == pass_score:
@@ -64,18 +74,18 @@ if __name__ == "__main__":
         final_scorer(val_score, len(input_))
 
     print("\nValidate name\n==========")
-    names = ("Edd", "", None)
-    expected = ("", "Warning. Empty name not accepted.", "Warning. Empty name not accepted.")
+    names = ("Xena", "", "    ", None)
+    expected = ("", "Warning. Empty name not accepted.", "Warning. Empty name not accepted.", "Warning. Empty name not accepted.")
     validation_loop(names, expected, "Name", validate_name)
 
     print("\nValidate ISBN\n==========")
-    isbns = ("0000000000000", "00001", "000000000a", "9780987654321")
+    isbns = ("1111111111111", "00001", "000000000a", "9780307949486")
     expected = ("", "Warning. ISBN must be 10 or 13 digits long.", "Warning. ISBN must be numeric.", "Warning. This ISBN is already in use.")
     validation_loop(isbns, expected, "ISBN", validate_isbn)
 
     print("\nValidate title\n==========")
-    titles = ("Words on a Page", "", None)
-    expected = ("", "Warning. Empty title not accepted.", "Warning. Empty title not accepted.")
+    titles = ("This is Not a Title", "", "    ", None)
+    expected = ("", "Warning. Empty title not accepted.", "Warning. Empty title not accepted.", "Warning. Empty title not accepted.")
     validation_loop(titles, expected, "Title", validate_title)
 
     print("\nValidate borrower\n==========")
@@ -86,7 +96,7 @@ if __name__ == "__main__":
     validation_loop(borrowers, expected, "Borrower", validate_loan_taker)
 
     print("\nValidate loan item\n==========")
-    items = (pd.read_sql("SELECT * FROM books WHERE ISBN = '9785566778899'", con=connection_string).iloc[0], # Gardens of Glass
+    items = (pd.read_sql("SELECT * FROM books WHERE ISBN = '9780307949486'", con=connection_string).iloc[0], # The Wind-Up Bird Chronicle
              pd.read_sql("SELECT * FROM books WHERE ISBN = '9781122334455'", con=connection_string).iloc[0] # The Secret Ingredient
             )
     expected = ("", f"Warning. {items[1]["title"]} is already on loan.")
