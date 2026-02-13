@@ -32,8 +32,8 @@ def delete_loan(loan):
         return f"Removed '{lookup_table["name"]}' borrowed '{lookup_table["title"]}' from 'loans'."
 
 if __name__ == "__main__":
-    import sys
     from sqlalchemy import create_engine
+    import sys
     sys.path.append("..")
     from con_lib import connection_string
     engine = create_engine(connection_string)
