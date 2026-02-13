@@ -85,15 +85,13 @@ if __name__ == "__main__":
                 print(f"Failed. '{i}'({t}) not sent to table.", o)
                     
         final_scorer(val_score, len(input_))
-    
-    # engine = create_engine(connection_string)
 
     print("\nUpdate friend\n==========")
     friend = pd.read_sql("SELECT * FROM friends WHERE friend_id = 6", con=engine).iloc[0]
     updates = (
         (friend, 'name', 'Soso'),
         (friend, 'max_loans', 2),
-        (friend, 'notes', "Doesn't answer phone, use socials.") #replace not needed in streamlit
+        (friend, 'notes', "Doesn't answer phone, use socials.") 
     )
     expected = (["Soso"], [2], ["Doesn't answer phone, use socials."])
     validation_loop(updates, expected, [u[1] for u in updates], "friends", update_friend)
@@ -101,11 +99,12 @@ if __name__ == "__main__":
     print("\nUpdate book\n==========")
     book = pd.read_sql("SELECT * FROM books WHERE isbn = '9785566778899'", con=engine).iloc[0]
     updates = (
-        (book, 'title', 'A Study in Boredom'),
-        (book, 'author', 'A. Snooze'),
-        (book, 'genre', 'Boring')
+        (book, 'title', 'Gardens of Obsidian'),
+        (book, 'author', 'Poison Ivy'),
+        (book, 'genre', 'Romantasy'),
+        (book, 'isbn', '9988776655879')
     )
-    expected = (['A Study in Boredom'], ['A. Snooze'], ['Boring'])
+    expected = (['Gardens of Obsidian'], ['Poison Ivy'], ['Romantasy'], ['9988776655879'])
     validation_loop(updates, expected, [u[1] for u in updates], "books", update_book)
 
     print("\nUpdate loan\n==========")
