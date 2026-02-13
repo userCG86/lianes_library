@@ -1,6 +1,9 @@
 import pandas as pd
 import db
 
+def prettify_df(df):
+    df.columns = [c.upper() if c == "isbn" else c.replace("_", " ").capitalize() for c in df.columns]
+    return df.fillna("")
 
 def read_friends():
     engine = db.get_engine()
@@ -8,7 +11,7 @@ def read_friends():
 
 def display_friends():
     friends = read_friends()
-    return friends.drop("friend_id", axis=1).rename({"name": "Name", "max_loans": "Max loans", "notes": "Notes"}, axis=1)
+    return friends.pipe(prettify_df).loc[:, "Name":]
 
 def read_books(available_only=False):
     engine = db.get_engine()
@@ -20,7 +23,7 @@ def read_books(available_only=False):
 
 def display_books(available_only=False):
     books = read_books(available_only)
-    return books.rename({"title": "Title", "author": "Author", "genre": "Genre", "isbn": "ISBN"}, axis=1)
+    return books.pipe(prettify_df).sort_values(by="Title")
 
 def read_loans():
     engine = db.get_engine()
@@ -32,8 +35,15 @@ def display_loans():
     loans = read_loans()
     for c in ["loan_date", "last_contact", "next_contact"]:
         loans[c] = loans[c].dt.strftime("%Y-%m-%d")
-        
-    return pd.merge(loans, friends, on="friend_id", suffixes=["", "_no"]).merge(books, on="isbn")[["title", "name", "loan_date", "last_contact", "next_contact", "notes"]].rename({"title": "Title", "name": "Name", "loan_date": "Loan date", "last_contact": "Last contact", "next_contact": "Next contact", "notes": "Notes"}, axis=1)
+    
+    display_columns = ["title", "name", "loan_date", "last_contact", "next_contact", "notes"]
+    df = (
+        pd.merge(loans, friends, on="friend_id", suffixes=["", "_no"])
+        .merge(books, on="isbn")
+        [display_columns]
+    )
+    return df.pipe(prettify_df).sort_values(by="Loan date")
+
 
 if __name__ == "__main__":
     from functools import partial
